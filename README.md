@@ -34,7 +34,7 @@ Reproducible code for paper "Sample Size Considerations for Micro-Randomized Tri
 | 9b              | simulation code/3. WA-b violated (Sec 6.4)/make figure 6.R                             |
 | 10              | simulation code/3. WA-b violated (Sec 6.4)/make figure 7.R                             |
 | 11              | simulation code/4. WA-c violated (Sec 6.5)/make figure 8.R                             |
-| 12              | simulation code/4. WA-c violated (Sec 6.5)/make figure 8.R                             |
+| 12              | simulation code/4. WA-c violated (Sec 6.5)/make figure 9.R                             |
 | 13              | simulation code/5. WA-d violated (Sec 6.6)/make figure 10.R                            |
 | 14              | simulation code/6. WA-e violated (Sec 6.7)/make figure 11.R                            |
 | D.1             | simulation code/7. WA-a violated (additional results in Appendix D.1)/make figure A1.R |
