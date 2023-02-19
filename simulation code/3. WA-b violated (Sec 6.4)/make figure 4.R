@@ -30,7 +30,7 @@ result %>%
                color = factor(gt_t_shape_and_theta))) +
     geom_line() +
     geom_hline(yintercept = 0.8, linetype = 2) +
-    scale_linetype_discrete(name = TeX(r'(Value of $ASPN^* = ASPN^w$)')) +
+    scale_linetype_discrete(name = TeX(r'(Value of $ASPN^*$)')) +
     scale_color_discrete(name = TeX(r'(Pattern of $SPNC^*(t)$ and $SPNC^w(t)$ )'),
                             labels = c(TeX(r'(constant)'),
                                        TeX(r'(linear, $\theta_g^* = \theta_g^w = -0.3$)'),

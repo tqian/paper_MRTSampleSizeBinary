@@ -19,7 +19,7 @@ result <- readRDS("simulation1.2/result_df_collected_nsim2000.RDS")
 power_1 <-
     result %>%
     ggplot(aes(x = power_adj)) +
-    geom_histogram(aes(y = ..density..), binwidth = 0.002, color = "white") +
+    geom_histogram(aes(y = after_stat(count)), binwidth = 0.002, color = "white") +
     geom_vline(xintercept = 0.8, linetype = 2, color = "blue", size = 1.2) +
     # stat_function(fun = dnorm,
     #               args = list(mean = mean(result$power_adj),

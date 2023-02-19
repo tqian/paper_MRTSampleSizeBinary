@@ -12,8 +12,8 @@ Reproducible code for paper "Sample Size Considerations for Micro-Randomized Tri
 ## How to reproduce the results
 
 - To reproduce results in Section 5 "Application", run all R scripts in folder "application code". The R scripts do not depend on one another so no particular ordering in running.
-- To reproduce simulation results in Section 6 "Detailed Simulation Results" (Sec. 6.2-6.7) and Supplementary Material D, do the following for each subfolder inside "simulation code":
-    - First, run the R script(s) inside all subfolder(s) "simulationX.X". This conducts Monte Carlo simulations and saves result file. **Caution: each R script may take a long time (days) to finish. Also, X.X in simulationX.X does not correspond to Sections in the paper; these indices are for the authors' internal use.**
+- To reproduce simulation results in Section 6 "Detailed Simulation Results" (Sec. 6.2-6.8) and Supplementary Material D, do the following for each subfolder inside "simulation code":
+    - First, run the R script(s) inside all subfolder(s) "simulationX(.X)". This conducts Monte Carlo simulations and saves result file. **Caution: each R script may take a long time (days) to finish. Also, X.X in simulationX.X does not correspond to Sections in the paper; these indices were created during the development of the paper.**
     - Second, run the R script(s) named "make figure X.R". This makes plots using the simulation result files. **Caution: X in the "make figure X.R" does not correspond to figure index in the paper. See table below for the figure index correspondence.**
     - For example, to reproduce everything in Section 6.3, go inside folder "2. WA-a violated (Sec 6.3)", then run the R scripts in subfolders "simulation2.2", "simulation2.3", "simulation2.4", "simulation2.5", "simulation4.1". Then, run the three R scripts "make figure 1.R", "make figure 2.R", "make figure 3.R".
 - To reproduce Figure 4 in in Sec. 6.1 of the paper, run the three R scripts in folder "misc code".
@@ -37,5 +37,6 @@ Reproducible code for paper "Sample Size Considerations for Micro-Randomized Tri
 | 12              | simulation code/4. WA-c violated (Sec 6.5)/make figure 9.R                             |
 | 13              | simulation code/5. WA-d violated (Sec 6.6)/make figure 10.R                            |
 | 14              | simulation code/6. WA-e violated (Sec 6.7)/make figure 11.R                            |
-| D.1             | simulation code/7. WA-a violated (additional results in Appendix D.1)/make figure A1.R |
-| D.2             | simulation code/8. WA-b violated (additional results in Appendix D.2)/make figure A2.R |
+| 15              | simulation code/7. multiple WAs violated (Sec 6.8)/make figure 12.R                    |
+| D.1             | simulation code/8. WA-a violated (additional results in Appendix D.1)/make figure A1.R |
+| D.2             | simulation code/9. WA-b violated (additional results in Appendix D.2)/make figure A2.R |
