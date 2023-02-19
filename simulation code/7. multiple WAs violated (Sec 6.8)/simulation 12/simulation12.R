@@ -1,10 +1,16 @@
 ### simulation ###
 # Binary MRT sample size paper
 #
-# see _simulation observations.md for simulation set up
+# Multiple working assumptions violated:
+# MEE^w(t) is constant but MEE^*(t) is not
+# ATE^w = ATE^*
+# SPNC^w(t) is constant but SPNC^*(t) is not
+# ASPN^w = ASPN^*
+# tau^w(t) is constant but tau^*(t) is not
+# AA^w = AA^*
 #
 # Tianchen Qian
-# 2022.05.07
+# 2023.02.17
 
 rm(list = ls())
 
@@ -12,14 +18,14 @@ rm(list = ls())
 library(rootSolve)
 library(MRTSampleSizeBinary)
 
-source("../../../functions/dgm_noDE.R")
-source("../../../functions/utility.R")
+source("../functions/dgm_noDE.R")
+source("../functions/utility.R")
 
 # functions copied from the "MRTAnalysisBinary" R package (not published)
 # make sure to update R package folder in "Carrie Cheng" if revised these functions
-source("../../../functions/estimator_EMEE_alwaysCenterA.R")
-source("../../../functions/find_change_location.R")
-source("../../../functions/get_alpha_beta_from_multiroot_result.R")
+source("../functions/estimator_EMEE_alwaysCenterA.R")
+source("../functions/find_change_location.R")
+source("../functions/get_alpha_beta_from_multiroot_result.R")
 
 # 1. Simulation design setup ----------------------------------------------
 
@@ -30,20 +36,23 @@ SD <- expand.grid(gamma = 0.05,  # type I error
                   m = c(30),
                   # pt_shape = c("constant 0.5", "linear 0.5"),
                   pt_shape = c("constant 0.5"),
-                  ft_t_shape = c("constant", "linear_theta"),
-                  ft_t_theta = c(-0.5, 0, 0.5),
-                  gt_t_shape = c("quadratic_theta"),
-                  gt_t_theta = seq(from = -0.5, to = 0.5, by = 0.1), 
+                  ft_t_shape = c("linear_theta", "quadratic_theta"),
+                  ft_t_theta = c(-0.3, 0.3),
+                  # ft_t_shape = c("constant"),
+                  # ft_t_theta = 0,
+                  gt_t_shape = c("linear_theta", "quadratic_theta"),
+                  gt_t_theta = c(-0.3, 0.3), 
                   # for specifying gt when gt_t_shape is linear or quadratic
-                  # ATE_t = c(1.2, 1.3, 1.4, 1.5),
+                  # ATE_t = c(1.2),
                   ATE_t = c(1.2),
                   ATE_t_empirical = NA,
-                  # ASPNC_t = c(0.1, 0.2, 0.3),
-                  ASPNC_t = c(0.3),
+                  ASPNC_t = c(0.2, 0.4),
+                  # ASPNC_t = c(0.1, 0.3),
                   ASPNC_t_empirical = NA,
                   # AvgTau_t = c(0.5, 0.8, 1),
-                  AvgTau_t = c(1),
-                  tau_t_shape = c("constant"),
+                  AvgTau_t = c(0.6),
+                  tau_t_shape = c("linear pm 0.1", "linear pm 0.2",
+                                  "sin pm 0.1", "sin pm 0.2"),
                   beta_t0 = NA,
                   beta_t1 = NA,
                   beta_t2 = NA,
@@ -53,10 +62,8 @@ SD <- expand.grid(gamma = 0.05,  # type I error
                   p = NA,
                   q = NA,
                   
-                  ft_w_shape = NA,
-                  ft_w_theta = NA,
-                  gt_w_shape = c("linear_theta"),
-                  gt_w_theta = seq(from = -0.5, to = 0.5, by = 0.1),
+                  ft_w_shape = "constant",
+                  gt_w_shape = "constant",
                   beta_w0 = NA,
                   beta_w1 = NA,
                   beta_w2 = NA,
@@ -68,37 +75,49 @@ SD <- expand.grid(gamma = 0.05,  # type I error
                   ASPNC_w = NA,
                   ASPNC_w_empirical = NA,
                   AvgTau_w = NA,
-                  tau_w_shape = NA,
+                  tau_w_shape = "constant",
                   p_w = NA,
                   q_w = NA,
                   n = NA,
-                  
                   stringsAsFactors = FALSE)
 
 # remove simulation settings where pt*ft is not in the linear span of gt
-SD <- SD[!(SD$ft_t_shape == "quadratic" & SD$pt_shape == "linear 0.5"), ]
+SD <- SD[!(SD$pt_shape == "linear 0.5 pm 0.1" &
+               SD$ft_t_shape == "quadratic_theta"), ]
+SD <- SD[!(SD$pt_shape == "linear 0.5 pm 0.1" &
+               SD$ft_t_shape == "linear_theta" &
+               SD$gt_t_shape != "quadratic_theta"), ]
+SD <- SD[!(SD$pt_shape == "linear 0.5 pm 0.1" &
+               SD$ft_t_shape == "constant" &
+               SD$gt_t_shape == "constant"), ]
 
-# remove redundant ones
-SD <- SD[!(SD$ft_t_shape == "constant" & SD$ft_t_theta != 0), ]
+SD <- SD[!(SD$ft_t_shape == "linear_theta" &
+               SD$gt_t_shape == "constant"), ]
+SD <- SD[!(SD$ft_t_shape == "quadratic_theta" &
+               SD$gt_t_shape != "quadratic_theta"), ]
+
+SD <- SD[!(SD$ft_t_shape == "constant" &
+               SD$ft_t_theta != 0), ]
+SD <- SD[!(SD$gt_t_shape == "constant" &
+               SD$gt_t_theta != 0), ]
+
+SD <- SD[!(SD$AvgTau_t == 1 &
+               SD$tau_t_shape != "constant"), ]
+
 
 ## add stuff that are known by simulation design
 # taut
 SD$AvgTau_w <- SD$AvgTau_t
-SD$tau_w_shape <- SD$tau_t_shape
 # gt
-# SD$gt_w_shape <- SD$gt_t_shape
-# SD$gt_w_theta <- SD$gt_t_theta
 SD$ASPNC_w <- SD$ASPNC_t
 # ft
-SD$ft_w_shape <- SD$ft_t_shape
-SD$ft_w_theta <- SD$ft_t_theta
 SD$ATE_w <- SD$ATE_t
+
 
 
 
 ##### fill the SD #####
 
-options(warn = 2)
 for (i in 1:nrow(SD)) {
     
     ## gamma, b, m
@@ -155,21 +174,16 @@ for (i in 1:nrow(SD)) {
     tryCatch({
         SD$n[i] <- mrt_binary_ss(taut_w, ft_w, gt_w, beta_w, alpha_w, pt, gamma, b,
                                  less_than_10_possible = TRUE)
+        ## generate a data set to make sure there are no probabilities outside [0,1]
+        dta <- dgm_noDE(SD$n[i], m, ft_t, beta_t, gt_t, alpha_t, taut_t, pt)
     },
     error = function(cond){
         message("iteration ", i, ": ", cond)
         return(NA)
     })
-    
-    if (!is.na(SD$n[i])) {
-        ## generate a data set to make sure there are no probabilities outside [0,1]
-        dta <- dgm_noDE(SD$n[i], m, ft_t, beta_t, gt_t, alpha_t, taut_t, pt)
-    }
 }
 
 summary(SD)
-
-##### to debug #####
 
 write.csv(SD, file = "_simulation design.csv")
 saveRDS(SD, file = "_simulation design.RDS")
@@ -180,22 +194,20 @@ saveRDS(SD, file = "_simulation design.RDS")
 
 rm(list = ls())
 
-options(warn = 0)
-
 nsim <- 2000
 
 # library(tidyverse)
 library(rootSolve)
 library(MRTSampleSizeBinary)
 
-source("../../../functions/dgm_noDE.R")
-source("../../../functions/utility.R")
+source("../functions/dgm_noDE.R")
+source("../functions/utility.R")
 
 # functions copied from the "MRTAnalysisBinary" R package (not published)
 # make sure to update R package folder in "Carrie Cheng" if revised these functions
-source("../../../functions/estimator_EMEE_alwaysCenterA.R")
-source("../../../functions/find_change_location.R")
-source("../../../functions/get_alpha_beta_from_multiroot_result.R")
+source("../functions/estimator_EMEE_alwaysCenterA.R")
+source("../functions/find_change_location.R")
+source("../functions/get_alpha_beta_from_multiroot_result.R")
 
 SD <- readRDS("_simulation design.RDS")
 
@@ -358,84 +370,80 @@ stopCluster(cl)
 
 
 
+# 3. Collect results from HPC3 cluster -----------------------------------------
 
-# 3. Make plots and tables ------------------------------------------------
+if (0) {
+    rm(list = ls())
+    setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+    
+    SD <- readRDS("_simulation design.RDS")
+    nsim <- 2000
+    
+    result_df_collected <- data.frame()
+    result_list_collected <- list()
+    
+    for (itask in 1:nrow(SD)) {
+        result_df_single <- readRDS(paste0("result/result_df_collected_nsim", 
+                                           nsim, "_task", itask, ".RDS"))
+        result_list_single <- readRDS(paste0("result/result_list_collected_nsim",
+                                             nsim, "_task", itask, ".RDS"))
+        result_df_collected <- rbind(result_df_collected, result_df_single)
+        result_list_collected <- c(result_list_collected, result_list_single)
+    }
+    
+    saveRDS(result_df_collected, file = paste0("result_df_collected_nsim", nsim, ".RDS"))
+    saveRDS(result_list_collected, file = paste0("result_list_collected_nsim", nsim, ".RDS"))
+    write.csv(result_df_collected, file = paste0("result_df_collected_nsim", nsim, ".csv"))
+}
+
+
+
+# 4. Make plots and tables ------------------------------------------------
 
 if (0) {
     rm(list = ls())
     setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
     library(tidyverse)
-    source("../../../functions/myggplot.R")
+    source("../functions/myggplot.R")
     
     nsim <- 2000
     result <- readRDS(paste0("result_df_collected_nsim", nsim, ".RDS"))
     
-    result %>% 
-        mutate(ATE_ASPNC = paste0(ATE_t, ", ", ASPNC_t)) %>%
-        # pivot_longer(c("power_adj", "power_unadj"),
-        #              names_to = "ss_correction", values_to = "power") %>%
-        ggplot(aes(x = gt_w_theta, y = power_adj,
-                   color = factor(gt_t_theta), linetype = ATE_ASPNC)) +
-        # geom_point() +
-        geom_line() + 
-        geom_hline(yintercept = 0.8) +
-        facet_grid(ft_t_shape + ft_w_shape ~ gt_t_shape + gt_w_shape + ft_t_theta,
-                   labeller = label_both) +
+    result %>%
+        ggplot(aes(x = power_adj)) +
+        geom_histogram(aes(y = after_stat(count)), binwidth = 0.002, color = "white") +
+        # geom_vline(xintercept = 0.8, linetype = 2, color = "blue", linewidth = 1.2) +
+        # stat_function(fun = dnorm,
+        #               args = list(mean = mean(result$power_adj),
+        #                           sd = sd(result$power_adj)),
+        #               color = "orange",
+        #               size = 1.5) +
+        xlab("power") + 
         theme_bw() + myggfont()
-    ggsave(paste0("plot_simu6.9_power_ftwtheta.pdf"), width = 10, height = 7.5)
-    
-    result %>% 
-        mutate(ATE_ASPNC = paste0(ATE_t, ", ", ASPNC_t)) %>%
-        # pivot_longer(c("power_adj", "power_unadj"),
-        #              names_to = "ss_correction", values_to = "power") %>%
-        ggplot(aes(x = gt_t_theta, y = power_adj,
-                   color = factor(gt_w_theta), linetype = ATE_ASPNC)) +
-        # geom_point() +
-        geom_line() + 
-        geom_hline(yintercept = 0.8) +
-        facet_grid(ft_t_shape + ft_w_shape ~ gt_t_shape + gt_w_shape + ft_t_theta,
-                   labeller = label_both) +
-        theme_bw() + myggfont()
-    ggsave(paste0("plot_simu6.9_power_gtttheta.pdf"), width = 10, height = 7.5)
+    ggsave(paste0("plot_simu12_power.pdf"), width = 6, height = 4)
     
     result %>%
-        mutate(ATE_ASPNC = paste0(ATE_t, ", ", ASPNC_t),
-               gt_t_theta_minus_gt_w_theta = gt_t_theta - gt_w_theta) %>%
-        ggplot(aes(x = gt_t_theta_minus_gt_w_theta, y = power_adj,
-                   color = factor(gt_w_theta), linetype = ATE_ASPNC)) +
-        # geom_point() +
-        geom_line() + 
-        geom_hline(yintercept = 0.8) +
-        facet_grid(ft_t_shape + ft_w_shape ~ gt_t_shape + gt_w_shape + ft_t_theta,
-                   labeller = label_both) +
+        ggplot(aes(y = power_adj)) +
+        geom_boxplot() +
+        # geom_vline(xintercept = 0.8, linetype = 2, color = "blue", linewidth = 1.2) +
+        # stat_function(fun = dnorm,
+        #               args = list(mean = mean(result$power_adj),
+        #                           sd = sd(result$power_adj)),
+        #               color = "orange",
+        #               size = 1.5) +
+        ylab("power") + 
         theme_bw() + myggfont()
-    ggsave(paste0("plot_simu6.9_power_gtttheta_minus_gtwtheta.pdf"), width = 10, height = 7.5)
+    
+    # ggsave(paste0("plot_simu12_power.pdf"), width = 6, height = 4)
     
     result %>% 
-        mutate(ATE_ASPNC = paste0(ATE_t, ", ", ASPNC_t)) %>%
         # pivot_longer(c("typeierror_adj", "typeierror_unadj"),
-        #              names_to = "ss_correction", values_to = "typeierror") %>%
-        ggplot(aes(x = gt_w_theta, y = typeierror_adj,
-                   color = factor(gt_t_theta), linetype = ATE_ASPNC)) +
-        # geom_point() +
-        geom_line() + 
+                     # names_to = "ss_correction", values_to = "typeierror") %>%
+        ggplot(aes(x = ASPNC_tw_ratio, y = typeierror_adj, color = factor(ASPNC_t))) +
+        geom_line() +
         geom_hline(yintercept = 0.05) +
-        facet_grid(ft_t_shape + ft_w_shape ~ gt_t_shape + gt_w_shape + ft_t_theta,
-                   labeller = label_both) +
+        ggtitle(paste0("nsim = ", nsim)) +
+        facet_grid(gt_t_shape ~ gt_t_theta, labeller = label_both) +
         theme_bw() + myggfont()
-    ggsave(paste0("plot_simu6.9_typeierror_gtwtheta.pdf"), width = 10, height = 7.5)
-    
-    result %>% 
-        mutate(ATE_ASPNC = paste0(ATE_t, ", ", ASPNC_t)) %>%
-        # pivot_longer(c("typeierror_adj", "typeierror_unadj"),
-        #              names_to = "ss_correction", values_to = "typeierror") %>%
-        ggplot(aes(x = gt_t_theta, y = typeierror_adj,
-                   color = factor(gt_w_theta), linetype = ATE_ASPNC)) +
-        # geom_point() +
-        geom_line() + 
-        geom_hline(yintercept = 0.05) +
-        facet_grid(ft_t_shape + ft_w_shape ~ gt_t_shape + gt_w_shape + ft_t_theta,
-                   labeller = label_both) +
-        theme_bw() + myggfont()
-    ggsave(paste0("plot_simu6.9_typeierror_gtttheta.pdf"), width = 10, height = 7.5)
+    ggsave(paste0("plot_simu5.2_typeierror.pdf"), width = 10, height = 7.5)
 }
